@@ -3,179 +3,758 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>GCP Tools – Cost Optimization, Autoscaling & Performance Analysis</title>
-
-<meta name="description" content="Free Google Cloud tools to analyze cost, autoscaling, BigQuery queries, Cloud Run, Firestore, networking, and performance optimization.">
-
-<meta name="keywords" content="
-gcp tools,
-google cloud cost calculator,
-bigquery cost estimator,
-cloud run performance tools,
-firestore query optimization,
-gcp autoscaling tools,
-cloud sql performance,
-gcp networking tools
-">
-
 <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
 
-<link rel="canonical" href="https://yourdomain.com/gcp-tools/">
+<title>BigQuery Cost Calculator – Query, Storage, GA4 & Slots Estimator (2026)</title>
+<meta name="description" content="Free BigQuery cost calculator for 2026. Estimate query costs, storage fees, streaming inserts, GA4 analytics costs, and slot reservations. Includes optimization tips to reduce BigQuery bills.">
+<link rel="canonical" href="https://franrivalbigprojects.github.io/gcp-tools/bigquery-cost/">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "BigQuery Cost Calculator",
+  "description": "Estimate BigQuery costs for queries, storage, streaming inserts, GA4 analytics, and slot reservations. Includes 2026 pricing.",
+  "url": "https://franrivalbigprojects.github.io/gcp-tools/bigquery-cost/",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How is BigQuery pricing calculated?",
+      "acceptedAnswer": { "@type": "Answer", "text": "BigQuery charges for three main things: (1) Query processing — on-demand pricing charges $6.25 per TB of data scanned. The first 1 TB per month is free. (2) Storage — active storage costs $0.020/GB/month. Long-term storage (tables not modified in 90+ days) costs $0.010/GB/month. The first 10 GB per month is free. (3) Streaming inserts — $0.010 per 200MB (minimum 1KB per row). BigQuery free tier: 1 TB queries/month, 10 GB storage/month." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I reduce BigQuery costs?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Top BigQuery cost reduction strategies: (1) SELECT specific columns instead of SELECT * — you're billed for all columns in SELECT *. (2) Use partitioned tables — partition by date so queries only scan relevant partitions. (3) Enable require_partition_filter on large tables. (4) Use clustering on frequently filtered columns (after partitioning). (5) Preview data volume with dry runs before executing. (6) Use materialized views for repeated aggregations. (7) Consider flat-rate (slot) pricing if running 400+ TB/month." }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does GA4 BigQuery export cost?",
+      "acceptedAnswer": { "@type": "Answer", "text": "GA4 BigQuery export has no direct export fee, but you pay for storage and queries. Typical costs: a medium e-commerce site with 100K daily sessions generates roughly 500K-1M events/day. Daily export creates ~50-200MB of data. Monthly storage: ~1.5-6 GB = $0.03-$0.12/month. Query costs depend entirely on how often you query and how much data you scan. A full-month scan of 3 GB = $0.019 (nearly free). Costs grow with traffic and query frequency." }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #020617;
-    color: #e2e8f0;
-    margin: 0;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:   #060a10; --bg2: #0a1018; --bg3: #0f1820;
+  --b:    #182430; --b2:  '#1e3040';
+  --text: #cce8f8; --muted: '#3c6888';
+  --acc:  #60a5fa; --acc2: #3b82f6;
+  --grn:  #22c55e; --grn-d: rgba(34,197,94,.07);
+  --org:  #f59e0b; --org-d: rgba(245,158,11,.07);
+  --red:  #f87171; --red-d: rgba(248,113,113,.07);
+  --mono: 'JetBrains Mono',monospace; --sans: 'Inter',sans-serif;
 }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.7; }
+.container { max-width: 980px; margin: 0 auto; padding: 0 22px; }
 
-.container {
-    max-width: 1300px;
-    margin: auto;
-    padding: 40px 20px;
-}
+/* HEADER */
+header { background: var(--bg2); border-bottom: 3px solid var(--acc); padding: 44px 0 28px; }
+.bc { font-family: var(--mono); font-size: 11px; color: #3c6888; margin-bottom: 12px; }
+.bc a { color: #3c6888; text-decoration: none; }
+h1 { font-size: clamp(20px, 3.8vw, 34px); font-weight: 700; color: #fff; margin-bottom: 10px; line-height: 1.1; }
+h1 em { color: var(--acc); font-style: normal; }
+.byline { font-family: var(--mono); font-size: 12px; color: #3c6888; margin-bottom: 14px; }
+.lead { font-size: 15px; color: #3c6888; max-width: 660px; margin-bottom: 18px; }
+.pills { display: flex; gap: 7px; flex-wrap: wrap; }
+.pill { font-family: var(--mono); font-size: 10px; padding: 3px 10px; border: 1px solid #1e3040; border-radius: 3px; color: #3c6888; text-transform: uppercase; letter-spacing: .05em; }
+.pill.a { border-color: var(--acc); color: var(--acc); }
+.pill.g { border-color: var(--grn); color: var(--grn); }
 
-h1, h2, h3 {
-    color: #60a5fa;
-}
+/* NAV */
+.nav { background: var(--bg2); border-bottom: 1px solid var(--b); position: sticky; top: 0; z-index: 100; }
+.nav .container { display: flex; overflow-x: auto; }
+.nav a { font-family: var(--mono); font-size: 11px; color: #3c6888; text-decoration: none; padding: 10px 14px; white-space: nowrap; border-bottom: 2px solid transparent; text-transform: uppercase; letter-spacing: .04em; transition: color .15s, border-color .15s; }
+.nav a:hover { color: var(--acc); border-bottom-color: var(--acc); }
 
-a {
-    color: #4ade80;
-    text-decoration: none;
-}
+/* SECTIONS */
+section { padding: 50px 0; border-bottom: 1px solid var(--b); }
+h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+h2 em { color: var(--acc); font-style: normal; }
+.sec-lead { color: #3c6888; font-size: 14px; margin-bottom: 22px; max-width: 640px; }
+h3 { font-size: 16px; font-weight: 600; color: var(--text); margin: 28px 0 8px; }
+p { margin-bottom: 12px; color: #3c6888; font-size: 14px; line-height: 1.8; }
+p:last-child { margin-bottom: 0; }
+code { font-family: var(--mono); font-size: 12px; background: var(--bg3); padding: 2px 6px; border-radius: 3px; color: var(--acc); }
+strong { color: var(--text); }
 
-.tool-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
+/* TOOL TABS */
+.tool-wrap { background: var(--bg2); border: 1.5px solid #1e3040; border-radius: 10px; overflow: hidden; }
+.ttabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--b); }
+.ttab { font-family: var(--mono); font-size: 11px; padding: 11px 18px; cursor: pointer; border-bottom: 2px solid transparent; color: #3c6888; background: none; border-left: none; border-right: none; border-top: none; text-transform: uppercase; letter-spacing: .04em; transition: all .15s; white-space: nowrap; }
+.ttab:hover { color: var(--acc); }
+.ttab.active { color: var(--acc); border-bottom-color: var(--acc); background: var(--bg3); }
+.tpanel { display: none; padding: 24px; }
+.tpanel.active { display: block; }
 
-.card {
-    background: #0f172a;
-    padding: 18px;
-    border-radius: 10px;
-    transition: 0.2s;
-}
+/* FIELDS */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-family: var(--mono); font-size: 11px; color: #3c6888; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+.field input, .field select { width: 100%; background: var(--bg); border: 1px solid #1e3040; color: var(--text); font-family: var(--mono); font-size: 13px; padding: 9px 12px; border-radius: 5px; outline: none; transition: border-color .2s; }
+.field input:focus, .field select:focus { border-color: var(--acc); }
+.field-hint { font-family: var(--mono); font-size: 10px; color: #3c6888; margin-top: 4px; }
+.inp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.inp-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
-.card:hover {
-    background: #1e293b;
-}
+/* BUTTONS */
+.btn { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 10px 20px; border-radius: 5px; cursor: pointer; text-transform: uppercase; letter-spacing: .06em; transition: all .15s; border: none; }
+.btn-p { background: var(--acc); color: #040a14; }
+.btn-p:hover { background: var(--acc2); }
+.btn-s { background: var(--bg3); border: 1px solid #1e3040; color: #3c6888; }
+.btn-s:hover { border-color: var(--acc); color: var(--acc); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.hint-t { font-family: var(--mono); font-size: 11px; color: #3c6888; }
 
-.faq {
-    margin-top: 50px;
+/* RESULT CARDS */
+.result-section { margin-top: 20px; background: var(--bg3); border: 1px solid var(--b); border-radius: 8px; overflow: hidden; }
+.rs-header { background: var(--b); padding: 10px 16px; font-family: var(--mono); font-size: 11px; color: #3c6888; text-transform: uppercase; letter-spacing: .06em; }
+.rs-body { padding: 16px; }
+
+.cost-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--b); font-size: 14px; }
+.cost-row:last-child { border-bottom: none; }
+.cost-label { color: #3c6888; }
+.cost-value { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+.cost-value.free { color: var(--grn); }
+.cost-value.warn { color: var(--org); }
+.cost-value.high { color: var(--red); }
+.cost-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: rgba(96,165,250,.06); border-top: 1px solid rgba(96,165,250,.2); }
+.ct-label { font-size: 15px; font-weight: 600; color: var(--text); }
+.ct-value { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--acc); }
+
+/* TIP BOX */
+.tip-box { margin-top: 14px; background: rgba(34,197,94,.05); border: 1px solid rgba(34,197,94,.2); border-radius: 6px; padding: 13px 16px; font-size: 13px; color: #3c6888; line-height: 1.65; }
+.tip-box strong { color: var(--grn); }
+
+/* STAT CARDS */
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.sc { background: var(--bg3); border: 1px solid var(--b); border-radius: 6px; padding: 12px 16px; flex: 1; min-width: 130px; }
+.sc-val { font-family: var(--mono); font-size: 20px; font-weight: 700; display: block; }
+.sc-label { font-family: var(--mono); font-size: 10px; color: #3c6888; text-transform: uppercase; letter-spacing: .04em; }
+
+/* INFO GRID */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
+.ib h3 { margin-top: 0; padding-bottom: 8px; border-bottom: 1px solid var(--b); font-size: 15px; }
+.tip-list { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.tip-list li { font-size: 14px; color: #3c6888; display: flex; gap: 8px; line-height: 1.55; }
+.tip-list li::before { content:'→'; color: var(--acc); font-family: var(--mono); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+.tip-list strong { color: var(--text); }
+
+/* PRICING TABLE */
+.ptable-wrap { overflow-x: auto; border: 1px solid var(--b); border-radius: 7px; }
+table { width: 100%; border-collapse: collapse; background: var(--bg2); font-size: 13px; }
+thead { background: var(--bg3); }
+thead th { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 9px 13px; text-align: left; color: #3c6888; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--b); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg3); }
+tbody td { padding: 9px 13px; color: #3c6888; }
+.td-item { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.td-price { font-family: var(--mono); color: var(--acc); }
+.td-free { font-family: var(--mono); color: var(--grn); }
+
+/* TOOLS NAV */
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; margin-top: 8px; }
+.tn { background: var(--bg2); border: 1px solid var(--b); border-radius: 7px; padding: 13px 15px; text-decoration: none; display: block; transition: border-color .15s; }
+.tn:hover { border-color: var(--acc); }
+.tn-n { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); display: block; margin-bottom: 3px; }
+.tn-d { font-size: 12px; color: #3c6888; }
+
+/* FAQ */
+.faq-item { border-bottom: 1px solid var(--b); }
+.faq-q { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; font-size: 14px; font-weight: 500; user-select: none; color: var(--text); }
+.faq-tog { font-size: 20px; color: var(--acc); flex-shrink: 0; transition: transform .2s; }
+.faq-item.open .faq-tog { transform: rotate(45deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height .3s ease, padding .3s; font-size: 14px; color: #3c6888; line-height: 1.75; }
+.faq-item.open .faq-a { max-height: 500px; padding-bottom: 14px; }
+
+footer { border-top: 1px solid var(--b); padding: 24px 0; font-family: var(--mono); font-size: 11px; color: #3c6888; }
+footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+footer nav { display: flex; gap: 14px; flex-wrap: wrap; }
+footer nav a { color: #3c6888; text-decoration: none; }
+footer nav a:hover { color: var(--acc); }
+
+@media (max-width: 640px) {
+  .inp-grid, .inp-grid-3 { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
+  footer .container { flex-direction: column; }
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<header>
+  <div class="container">
+    <p class="bc"><a href="../">GCP Tools</a> / BigQuery Cost Calculator</p>
+    <h1>BigQuery <em>Cost Calculator</em></h1>
+    <p class="byline">2026 pricing · Updated March 2026</p>
+    <p class="lead">Estimate BigQuery costs for queries, storage, streaming inserts, GA4 analytics exports, and slot reservations. Includes optimization tips to reduce your bill.</p>
+    <div class="pills">
+      <span class="pill a">Query cost</span>
+      <span class="pill a">Storage</span>
+      <span class="pill a">GA4 export</span>
+      <span class="pill g">2026 pricing</span>
+    </div>
+  </div>
+</header>
 
-<h1>GCP Tools</h1>
+<nav class="nav">
+  <div class="container">
+    <a href="#calculator">Calculator</a>
+    <a href="#pricing">Pricing Table</a>
+    <a href="#optimize">Reduce Costs</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</nav>
 
-<p>
-Optimize your cloud infrastructure on 
-:contentReference[oaicite:0]{index=0} 
-with tools focused on cost optimization, autoscaling, database performance,
-networking, and serverless systems.
-</p>
+<!-- CALCULATOR -->
+<section id="calculator">
+  <div class="container">
+    <h2>BigQuery <em>Cost Calculator</em></h2>
+    <p class="sec-lead">Four calculators covering the main BigQuery cost areas. All use 2026 Google Cloud pricing.</p>
 
-<h2>☁️ Available GCP Tools</h2>
+    <div class="tool-wrap">
+      <div class="ttabs">
+        <button class="ttab active" onclick="st('query',this)">📊 Query Cost</button>
+        <button class="ttab" onclick="st('storage',this)">💾 Storage</button>
+        <button class="ttab" onclick="st('ga4',this)">📈 GA4 Export</button>
+        <button class="ttab" onclick="st('slots',this)">⚡ Slots / Flat-Rate</button>
+      </div>
 
-<div class="tool-grid">
+      <!-- QUERY COST -->
+      <div class="tpanel active" id="tp-query">
+        <p style="font-size:13px;color:#3c6888;margin-bottom:18px;">BigQuery on-demand pricing charges <strong style="color:var(--text)">$6.25 per TB scanned</strong> (US multi-region). First 1 TB/month free. Estimates are based on data scanned, not rows returned.</p>
 
-<a href="./api/" class="card"><h3>API Performance Analyzer</h3><p>Optimize API response and scaling.</p></a>
+        <div class="inp-grid-3">
+          <div class="field">
+            <label>Table size (GB)</label>
+            <input type="number" id="q-tablesize" value="500" min="0.001" step="1" oninput="calcQuery()">
+            <div class="field-hint">Total size of table(s) scanned</div>
+          </div>
+          <div class="field">
+            <label>% of table scanned per query</label>
+            <input type="number" id="q-scanpct" value="100" min="1" max="100" oninput="calcQuery()">
+            <div class="field-hint">100% = SELECT * or no partition filter</div>
+          </div>
+          <div class="field">
+            <label>Queries per month</label>
+            <input type="number" id="q-permonth" value="30" min="1" oninput="calcQuery()">
+          </div>
+        </div>
+        <div class="inp-grid">
+          <div class="field">
+            <label>Pricing model</label>
+            <select id="q-model" onchange="calcQuery()">
+              <option value="ondemand" selected>On-demand ($6.25/TB scanned)</option>
+              <option value="enterprise">Enterprise Edition (slot-based)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Partitioned table?</label>
+            <select id="q-partition" onchange="calcQuery()">
+              <option value="no" selected>No partitioning</option>
+              <option value="date">Date-partitioned (filter by date)</option>
+              <option value="column">Column-partitioned (filter by column)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" id="q-partition-field" style="display:none;">
+          <label>Partition filter reduces scan by (%)</label>
+          <input type="number" id="q-partition-pct" value="90" min="10" max="99" oninput="calcQuery()">
+          <div class="field-hint">e.g. querying 3 days of daily data = ~90% reduction</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-p" onclick="calcQuery()">Calculate Cost</button>
+          <button class="btn btn-s" onclick="resetQuery()">Reset</button>
+        </div>
+        <div id="query-result" style="display:none;"></div>
+      </div>
 
-<a href="./autoscale/" class="card"><h3>Autoscaling Analyzer</h3><p>Optimize scaling policies and load handling.</p></a>
+      <!-- STORAGE -->
+      <div class="tpanel" id="tp-storage">
+        <p style="font-size:13px;color:#3c6888;margin-bottom:18px;">Storage costs: <strong style="color:var(--text)">$0.020/GB/month</strong> active (modified within 90 days) · <strong style="color:var(--text)">$0.010/GB/month</strong> long-term (not modified 90+ days). First 10 GB/month free.</p>
 
-<a href="./bigquery-cost/" class="card"><h3>BigQuery Cost Estimator</h3><p>Estimate query costs and optimize usage.</p></a>
+        <div class="inp-grid">
+          <div class="field">
+            <label>Active storage (GB)</label>
+            <input type="number" id="st-active" value="100" min="0" oninput="calcStorage()">
+            <div class="field-hint">Tables modified within 90 days</div>
+          </div>
+          <div class="field">
+            <label>Long-term storage (GB)</label>
+            <input type="number" id="st-longterm" value="500" min="0" oninput="calcStorage()">
+            <div class="field-hint">Tables untouched for 90+ days (50% cheaper)</div>
+          </div>
+          <div class="field">
+            <label>Monthly data ingested (GB)</label>
+            <input type="number" id="st-ingest" value="20" min="0" oninput="calcStorage()">
+            <div class="field-hint">New data loaded via batch or streaming</div>
+          </div>
+          <div class="field">
+            <label>Streaming inserts (GB/month)</label>
+            <input type="number" id="st-stream" value="0" min="0" oninput="calcStorage()">
+            <div class="field-hint">$0.010 per 200MB (billed per row, min 1KB)</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-p" onclick="calcStorage()">Calculate Cost</button>
+          <button class="btn btn-s" onclick="resetStorage()">Reset</button>
+        </div>
+        <div id="storage-result" style="display:none;"></div>
+      </div>
 
-<a href="./cloud-run/" class="card"><h3>Cloud Run Analyzer</h3><p>Optimize serverless container performance.</p></a>
+      <!-- GA4 EXPORT -->
+      <div class="tpanel" id="tp-ga4">
+        <p style="font-size:13px;color:#3c6888;margin-bottom:18px;">GA4 → BigQuery export is free, but you pay for storage and queries. Estimate costs based on your site traffic and analysis patterns.</p>
 
-<a href="./cloud-sql/" class="card"><h3>Cloud SQL Optimizer</h3><p>Improve database performance.</p></a>
+        <div class="inp-grid">
+          <div class="field">
+            <label>Daily sessions</label>
+            <input type="number" id="ga-sessions" value="10000" min="100" oninput="calcGA4()">
+          </div>
+          <div class="field">
+            <label>Avg events per session</label>
+            <input type="number" id="ga-events-per-session" value="8" min="1" oninput="calcGA4()">
+          </div>
+          <div class="field">
+            <label>Queries per month</label>
+            <input type="number" id="ga-queries" value="50" min="1" oninput="calcGA4()">
+            <div class="field-hint">How often you run analytics queries</div>
+          </div>
+          <div class="field">
+            <label>Avg date range per query (days)</label>
+            <input type="number" id="ga-daterange" value="30" min="1" max="365" oninput="calcGA4()">
+          </div>
+          <div class="field">
+            <label>Months of data retained</label>
+            <input type="number" id="ga-months" value="12" min="1" max="60" oninput="calcGA4()">
+          </div>
+          <div class="field">
+            <label>Use partition filter?</label>
+            <select id="ga-partition" onchange="calcGA4()">
+              <option value="yes" selected>Yes (filter by _TABLE_SUFFIX date)</option>
+              <option value="no">No (scan all tables)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-p" onclick="calcGA4()">Calculate GA4 Cost</button>
+        </div>
+        <div id="ga4-result" style="display:none;"></div>
+      </div>
 
-<a href="./firestore/" class="card"><h3>Firestore Analyzer</h3><p>Optimize NoSQL queries and structure.</p></a>
+      <!-- SLOTS -->
+      <div class="tpanel" id="tp-slots">
+        <p style="font-size:13px;color:#3c6888;margin-bottom:18px;">Flat-rate (slot) pricing makes sense when on-demand costs exceed ~$3,000/month. Enterprise Edition starts at 100 slots ($2,400/month). Compare with your on-demand spend to find the break-even point.</p>
 
-<a href="./function-cold/" class="card"><h3>Function Cold Start Tool</h3><p>Analyze serverless startup delays.</p></a>
+        <div class="inp-grid">
+          <div class="field">
+            <label>Current monthly on-demand spend ($)</label>
+            <input type="number" id="sl-current" value="1000" min="0" oninput="calcSlots()">
+          </div>
+          <div class="field">
+            <label>Monthly TB scanned</label>
+            <input type="number" id="sl-tb" value="160" min="0" oninput="calcSlots()">
+          </div>
+          <div class="field">
+            <label>Edition</label>
+            <select id="sl-edition" onchange="calcSlots()">
+              <option value="enterprise" selected>Enterprise ($24/slot/month)</option>
+              <option value="enterprise-plus">Enterprise Plus ($48/slot/month)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Slots needed (estimate)</label>
+            <input type="number" id="sl-slots" value="100" min="100" step="100" oninput="calcSlots()">
+            <div class="field-hint">Minimum 100 slots. Rule of thumb: 100 slots per 100 concurrent users</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-p" onclick="calcSlots()">Compare Plans</button>
+        </div>
+        <div id="slots-result" style="display:none;"></div>
+      </div>
 
-<a href="./iam/" class="card"><h3>IAM Analyzer</h3><p>Audit permissions and security.</p></a>
+    </div>
+  </div>
+</section>
 
-<a href="./lb/" class="card"><h3>Load Balancer Analyzer</h3><p>Optimize traffic distribution.</p></a>
+<!-- PRICING TABLE -->
+<section id="pricing">
+  <div class="container">
+    <h2>BigQuery Pricing <em>Reference 2026</em></h2>
+    <p class="sec-lead">Current BigQuery pricing for US multi-region (us-east1/us-central1 may differ). Always verify on the <a href="https://cloud.google.com/bigquery/pricing" target="_blank" rel="noopener" style="color:var(--acc)">official BigQuery pricing page</a>.</p>
 
-<a href="./network/" class="card"><h3>Network Analyzer</h3><p>Analyze latency and connectivity.</p></a>
+    <div class="ptable-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Tier</th><th>Price</th><th>Free Tier</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="td-item">Query (on-demand)</td><td>All data scanned</td><td class="td-price">$6.25/TB</td><td class="td-free">1 TB/month</td><td>Billed by bytes scanned, rounded up to nearest 10MB</td></tr>
+          <tr><td class="td-item">Active Storage</td><td>Modified &lt;90 days</td><td class="td-price">$0.020/GB/month</td><td class="td-free">10 GB/month</td><td>Partitioned tables each partition ages independently</td></tr>
+          <tr><td class="td-item">Long-term Storage</td><td>Not modified 90+ days</td><td class="td-price">$0.010/GB/month</td><td class="td-free">10 GB/month</td><td>Automatic — no action needed, applies per partition</td></tr>
+          <tr><td class="td-item">Streaming Inserts</td><td>Per 200MB</td><td class="td-price">$0.010/200MB</td><td>None</td><td>Min 1KB per row. Batch loads are free.</td></tr>
+          <tr><td class="td-item">Storage API reads</td><td>Per TB read</td><td class="td-price">$1.10/TB</td><td>300 TB/month</td><td>BigQuery Storage Read API (Spark, Arrow, Avro)</td></tr>
+          <tr><td class="td-item">Enterprise Slots</td><td>Per slot/month</td><td class="td-price">$24/slot/month</td><td>None</td><td>Minimum 100 slots ($2,400/month). Includes autoscaling.</td></tr>
+          <tr><td class="td-item">Enterprise Plus</td><td>Per slot/month</td><td class="td-price">$48/slot/month</td><td>None</td><td>Adds CMEK, column-level security, data masking.</td></tr>
+          <tr><td class="td-item">ML (BQML)</td><td>Per TB processed</td><td class="td-price">$250/TB</td><td>10 GB/month</td><td>CREATE MODEL queries. Prediction queries: standard rate.</td></tr>
+          <tr><td class="td-item">Data Transfer</td><td>Egress</td><td class="td-price">$0.08–$0.15/GB</td><td>1 GB/month</td><td>Export to external destinations. Internal GCP transfers often free.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
-<a href="./pipeline/" class="card"><h3>Pipeline Optimizer</h3><p>Improve CI/CD workflows.</p></a>
+<!-- OPTIMIZE -->
+<section id="optimize">
+  <div class="container">
+    <h2>How to <em>Reduce BigQuery Costs</em></h2>
+    <p class="sec-lead">Ranked by typical impact. Most teams can reduce BigQuery query costs 50-90% with partitioning and column selection alone.</p>
 
-<a href="./pubsub/" class="card"><h3>Pub/Sub Analyzer</h3><p>Optimize messaging systems.</p></a>
+    <div class="info-grid">
+      <div class="ib">
+        <h3>Query optimization</h3>
+        <ul class="tip-list">
+          <li><strong>Never SELECT *.</strong> SELECT * scans every column. List only the columns you need — a 20-column table querying 3 columns costs ~15% as much.</li>
+          <li><strong>Partition tables by date.</strong> A daily-partitioned table with a <code>WHERE date = '2026-05-15'</code> filter only scans that day's partition. 365× cheaper for single-day queries.</li>
+          <li><strong>Add require_partition_filter.</strong> Prevents accidental full-table scans: <code>ALTER TABLE t SET OPTIONS (require_partition_filter=true)</code></li>
+          <li><strong>Use LIMIT for exploration.</strong> <code>LIMIT 100</code> does NOT reduce scan cost — it runs the full query. Use a sample: <code>WHERE RAND() &lt; 0.01</code>.</li>
+          <li><strong>Dry run before executing.</strong> Add <code>--dry_run</code> in bq CLI or set <code>dryRun: true</code> in API to see bytes scanned before paying.</li>
+        </ul>
+      </div>
+      <div class="ib">
+        <h3>Storage optimization</h3>
+        <ul class="tip-list">
+          <li><strong>Set table expiration.</strong> Temporary tables and staging data should expire: <code>ALTER TABLE t SET OPTIONS (expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY))</code></li>
+          <li><strong>Let partitions age to long-term.</strong> Partitions untouched for 90 days automatically drop to $0.010/GB. Don't run unnecessary UPDATE queries that reset the clock.</li>
+          <li><strong>Use clustering after partitioning.</strong> Clustering by user_id, country, or product_id after partition date reduces scan cost further for filtered queries.</li>
+          <li><strong>Delete unused datasets.</strong> Audit datasets regularly. Dev/test tables often accumulate to hundreds of GB over time.</li>
+          <li><strong>Batch load instead of streaming.</strong> Batch loads (bq load, GCS → BQ) are free. Streaming inserts cost $0.010/200MB — avoid for analytics ETL.</li>
+        </ul>
+      </div>
+      <div class="ib">
+        <h3>GA4 BigQuery cost reduction</h3>
+        <ul class="tip-list">
+          <li><strong>Always filter by _TABLE_SUFFIX.</strong> GA4 stores daily tables: <code>events_20260515</code>. Without a date filter, every query scans the full history.</li>
+          <li><strong>Use pseudo-columns.</strong> GA4 BigQuery export columns like event_params are ARRAY&lt;STRUCT&gt; — always use UNNEST with a WHERE clause to avoid scanning all nested data.</li>
+          <li><strong>Create aggregate tables.</strong> Instead of re-scanning raw events daily, create a materialized daily summary table. Query the summary instead of raw events for dashboards.</li>
+          <li><strong>Sample for exploration.</strong> For exploratory queries, add <code>AND RAND() &lt; 0.1</code> to work on 10% of data at 10% of the cost.</li>
+        </ul>
+      </div>
+      <div class="ib">
+        <h3>Architecture for cost control</h3>
+        <ul class="tip-list">
+          <li><strong>Materialized views.</strong> Pre-aggregate commonly queried metrics. BigQuery automatically refreshes on source table updates. Queries against the MV scan only the aggregated data.</li>
+          <li><strong>Data Studio / Looker caching.</strong> Enable dashboard query caching — repeated identical queries serve from cache without re-scanning.</li>
+          <li><strong>Budget alerts.</strong> Set project-level and dataset-level cost alerts in GCP Billing so spikes are caught before end of month.</li>
+          <li><strong>Slot reservations at scale.</strong> If you consistently scan 400+ TB/month, Enterprise Edition slots at $2,400/month base may be cheaper than on-demand $2,500/month at 400TB.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-<a href="./query-perf/" class="card"><h3>Query Performance Tool</h3><p>Analyze database query efficiency.</p></a>
-
-<a href="./storage/" class="card"><h3>Storage Optimizer</h3><p>Optimize storage usage and cost.</p></a>
-
-<a href="./vm-cost/" class="card"><h3>VM Cost Calculator</h3><p>Estimate compute costs and usage.</p></a>
-
-</div>
-
-<!-- LONG TAIL -->
-
-<h2>GCP Optimization Use Cases</h2>
-
-<ul>
-<li>How to reduce Google Cloud costs</li>
-<li>How BigQuery pricing works</li>
-<li>How to optimize Cloud Run performance</li>
-<li>How to reduce serverless cold starts</li>
-<li>How to optimize Firestore queries</li>
-<li>How to scale applications in GCP</li>
-<li>How to improve cloud networking performance</li>
-</ul>
+<!-- TOOLS NAV -->
+<section style="padding:40px 0;border-bottom:1px solid var(--b);">
+  <div class="container">
+    <h2>GCP <em>Tools</em></h2>
+    <div class="tools-grid">
+      <a href="../vm-cost/index.html" class="tn"><span class="tn-n">VM Cost Calculator</span><span class="tn-d">Estimate Compute Engine costs</span></a>
+      <a href="../cloud-run/index.html" class="tn"><span class="tn-n">Cloud Run Analyzer</span><span class="tn-d">Serverless container costs</span></a>
+      <a href="../storage/index.html" class="tn"><span class="tn-n">Storage Optimizer</span><span class="tn-d">GCS storage cost estimator</span></a>
+      <a href="../cloud-sql/index.html" class="tn"><span class="tn-n">Cloud SQL Optimizer</span><span class="tn-d">Database performance + costs</span></a>
+      <a href="../network/index.html" class="tn"><span class="tn-n">Network Analyzer</span><span class="tn-d">Egress and latency costs</span></a>
+    </div>
+  </div>
+</section>
 
 <!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <h2>BigQuery Cost – <em>FAQ</em></h2>
 
-<div class="faq">
+    <div class="faq-item"><div class="faq-q" onclick="tf(this)">How is BigQuery pricing calculated?<span class="faq-tog">+</span></div><div class="faq-a">BigQuery on-demand pricing charges $6.25 per terabyte (TB) of data scanned by your queries. The first 1 TB per month is free. Storage costs $0.020/GB/month for active data and $0.010/GB/month for long-term storage (tables not modified in 90+ days) — with 10 GB/month free. Streaming inserts cost $0.010 per 200MB. BigQuery does not charge for: batch data loads, queries on views, or data exports to GCS in the same region. Use the Query Cost calculator above to estimate your specific workload.</div></div>
+    <div class="faq-item"><div class="faq-q" onclick="tf(this)">Does LIMIT reduce BigQuery query cost?<span class="faq-tog">+</span></div><div class="faq-a">No. LIMIT does not reduce the amount of data scanned — it only limits the rows returned in the result. BigQuery scans data before filtering, so SELECT * FROM table LIMIT 100 costs the same as SELECT * FROM table. To reduce scan cost: use partitioned tables with date filters, SELECT specific columns instead of *, use table sampling (TABLESAMPLE SYSTEM(1 PERCENT)), or add a WHERE clause that filters on a partitioned or clustered column.</div></div>
+    <div class="faq-item"><div class="faq-q" onclick="tf(this)">How much does GA4 BigQuery export cost?<span class="faq-tog">+</span></div><div class="faq-a">The export itself is free. You pay for: storage of the exported data ($0.020/GB/month active) and the cost of queries you run against it. A medium site with 50K daily sessions generates roughly 2-5 MB of event data per day — about 60-150 MB/month. Annual storage: ~1-2 GB = $0.02-$0.04/month. Query costs depend on how often you query and whether you use partition filters (_TABLE_SUFFIX). Without partition filters, a full-history scan of 12 months of data for a high-traffic site can cost $1-5 per query. With _TABLE_SUFFIX date filters: fractions of a cent. The GA4 Cost Calculator tab above models this precisely for your traffic level.</div></div>
+    <div class="faq-item"><div class="faq-q" onclick="tf(this)">When should I switch to flat-rate (slot) pricing?<span class="faq-tog">+</span></div><div class="faq-a">Flat-rate makes economic sense when your monthly on-demand spend consistently exceeds ~$3,000-$4,000/month ($6.25/TB × approximately 480-640 TB/month). Enterprise Edition starts at 100 slots for $2,400/month. However, slots also guarantee performance — if you have latency-sensitive dashboards or competitive SLAs, slots guarantee a fixed compute capacity regardless of concurrent query load. Use the Slots calculator tab to compare your current on-demand spend against flat-rate options and find your break-even point.</div></div>
+    <div class="faq-item"><div class="faq-q" onclick="tf(this)">What is the difference between active and long-term BigQuery storage?<span class="faq-tog">+</span></div><div class="faq-a">Active storage costs $0.020/GB/month — applies to any table or table partition that has been modified in the last 90 days. Long-term storage costs $0.010/GB/month (50% cheaper) — automatically applies to tables or partitions that haven't been modified for 90 consecutive days. For partitioned tables, each partition ages independently. A 2-year-old partition of a daily-partitioned table will be long-term even if you insert new data into today's partition. This means large historical archives naturally drop to the lower price without any manual action.</div></div>
+  </div>
+</section>
 
-<h2>Frequently Asked Questions</h2>
+<footer>
+  <div class="container">
+    <span>BigQuery Cost Calculator — 2026 pricing</span>
+    <nav>
+      <a href="#calculator">Calculator</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#optimize">Reduce Costs</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</footer>
 
-<h3>Why is my GCP bill high?</h3>
-<p>
-Inefficient queries, over-provisioned resources, or poor scaling can increase costs.
-</p>
+<!-- ================================================================
+     JAVASCRIPT — ES5, NO ARROW FUNCTIONS
+     ================================================================ -->
+<script>
 
-<h3>What is BigQuery pricing based on?</h3>
-<p>
-It depends on data scanned and query complexity.
-</p>
+/* ── PRICING CONSTANTS (2026) ── */
+var BQ_QUERY_PER_TB    = 6.25;
+var BQ_FREE_QUERY_TB   = 1.0;
+var BQ_ACTIVE_PER_GB   = 0.020;
+var BQ_LONGTERM_PER_GB = 0.010;
+var BQ_FREE_STORAGE_GB = 10;
+var BQ_STREAM_PER_GB   = 0.050; /* $0.010 per 200MB = $0.05/GB */
+var ENTERPRISE_PER_SLOT = 24;
+var ENTERPRISE_PLUS_PER_SLOT = 48;
 
-<h3>How can I improve performance?</h3>
-<p>
-Optimize queries, scale properly, and reduce unnecessary resource usage.
-</p>
+function fmtDollar(n) {
+  if (n < 0.001) { return '$' + n.toFixed(6); }
+  if (n < 0.01)  { return '$' + n.toFixed(4); }
+  if (n < 1)     { return '$' + n.toFixed(3); }
+  if (n < 100)   { return '$' + n.toFixed(2); }
+  if (n < 10000) { return '$' + n.toFixed(2); }
+  return '$' + Math.round(n).toLocaleString('en');
+}
+function fmtNum(n, dec) { return Number(n).toFixed(dec !== undefined ? dec : 2); }
+function escH(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-<h3>What causes cold starts?</h3>
-<p>
-Serverless functions initializing after inactivity.
-</p>
+/* ── TAB ── */
+function st(name, btn) {
+  var tabs = document.querySelectorAll('.ttab');
+  var panels = document.querySelectorAll('.tpanel');
+  for (var i = 0; i < tabs.length; i++) { tabs[i].className = 'ttab'; }
+  for (var j = 0; j < panels.length; j++) { panels[j].className = 'tpanel'; }
+  btn.className = 'ttab active';
+  document.getElementById('tp-' + name).className = 'tpanel active';
+}
 
-<h3>How do I reduce latency?</h3>
-<p>
-Use regional deployments, caching, and optimized networking.
-</p>
+/* ── QUERY CALCULATOR ── */
+function calcQuery() {
+  var tableSizeGB  = parseFloat(document.getElementById('q-tablesize').value) || 0;
+  var scanPct      = parseFloat(document.getElementById('q-scanpct').value) / 100 || 1;
+  var perMonth     = parseFloat(document.getElementById('q-permonth').value) || 1;
+  var model        = document.getElementById('q-model').value;
+  var partition    = document.getElementById('q-partition').value;
+  var partField    = document.getElementById('q-partition-field');
 
-</div>
+  partField.style.display = partition !== 'no' ? 'block' : 'none';
 
-<!-- INTERNAL BOOST -->
+  var effectiveScanPct = scanPct;
+  if (partition !== 'no') {
+    var partReduction = parseFloat(document.getElementById('q-partition-pct').value) / 100 || 0.9;
+    effectiveScanPct = scanPct * (1 - partReduction);
+  }
 
-<h2>Related Topics</h2>
+  var tbPerQuery    = (tableSizeGB / 1024) * effectiveScanPct;
+  var tbPerMonth    = tbPerQuery * perMonth;
+  var billableTB    = Math.max(0, tbPerMonth - BQ_FREE_QUERY_TB);
+  var monthlyCost   = billableTB * BQ_QUERY_PER_TB;
 
-<p>
-These tools connect with cloud architecture, DevOps,
-and scalable application design.
-</p>
+  var scanGBperQuery = tableSizeGB * effectiveScanPct;
+  /* Round up to nearest 10MB as BQ does */
+  var billableGBperQuery = Math.ceil(scanGBperQuery / 0.01) * 0.01;
 
-</div>
+  var html = '<div class="result-section">';
+  html += '<div class="rs-header">Query Cost Breakdown</div><div class="rs-body">';
+  html += costRow('Table size', fmtNum(tableSizeGB, 1) + ' GB');
+  html += costRow('Scan per query', fmtNum(scanGBperQuery, 2) + ' GB (' + fmtNum(effectiveScanPct*100, 1) + '% of table)');
+  html += costRow('TB scanned per query', fmtNum(tbPerQuery, 4) + ' TB');
+  html += costRow('Queries per month', perMonth);
+  html += costRow('Total TB scanned/month', fmtNum(tbPerMonth, 3) + ' TB');
+  html += costRow('Free tier', '- ' + fmtNum(Math.min(tbPerMonth, BQ_FREE_QUERY_TB), 3) + ' TB');
+  html += costRow('Billable TB', fmtNum(billableTB, 3) + ' TB × $' + BQ_QUERY_PER_TB + '/TB', billableTB === 0 ? 'free' : '');
+  html += '</div>';
+  html += '<div class="cost-total"><span class="ct-label">Monthly query cost</span><span class="ct-value">' + fmtDollar(monthlyCost) + '</span></div>';
+  html += '</div>';
 
+  /* Tips */
+  if (scanPct === 1 && partition === 'no') {
+    html += '<div class="tip-box"><strong>Tip:</strong> You\'re scanning 100% of the table. Adding date partitioning and a date filter could reduce this cost by 90%+ if you typically query recent data. At ' + fmtNum(tbPerMonth, 2) + ' TB/month, that\'s ' + fmtDollar(monthlyCost * 0.9) + ' in potential monthly savings.</div>';
+  }
+  if (monthlyCost === 0) {
+    html += '<div class="tip-box"><strong>Within free tier.</strong> Your usage stays under the 1 TB/month free quota. No charges apply.</div>';
+  }
+
+  document.getElementById('query-result').innerHTML = html;
+  document.getElementById('query-result').style.display = 'block';
+}
+
+function resetQuery() {
+  document.getElementById('q-tablesize').value = 500;
+  document.getElementById('q-scanpct').value   = 100;
+  document.getElementById('q-permonth').value  = 30;
+  document.getElementById('q-partition').value = 'no';
+  document.getElementById('q-partition-field').style.display = 'none';
+  document.getElementById('query-result').style.display = 'none';
+}
+
+/* ── STORAGE CALCULATOR ── */
+function calcStorage() {
+  var activeGB   = parseFloat(document.getElementById('st-active').value)   || 0;
+  var longtermGB = parseFloat(document.getElementById('st-longterm').value) || 0;
+  var ingestGB   = parseFloat(document.getElementById('st-ingest').value)   || 0;
+  var streamGB   = parseFloat(document.getElementById('st-stream').value)   || 0;
+
+  var freeGB = BQ_FREE_STORAGE_GB;
+  var billableActive   = Math.max(0, activeGB - freeGB);
+  var billableLongterm = longtermGB; /* free tier shared with active */
+  var activeCost   = billableActive * BQ_ACTIVE_PER_GB;
+  var longtermCost = billableLongterm * BQ_LONGTERM_PER_GB;
+  var streamCost   = streamGB * BQ_STREAM_PER_GB;
+  var total = activeCost + longtermCost + streamCost;
+
+  var html = '<div class="result-section">';
+  html += '<div class="rs-header">Storage Cost Breakdown</div><div class="rs-body">';
+  html += costRow('Active storage (' + activeGB + ' GB)', fmtDollar(activeCost) + ' ($0.020/GB)', activeCost === 0 ? 'free' : '');
+  html += costRow('Long-term storage (' + longtermGB + ' GB)', fmtDollar(longtermCost) + ' ($0.010/GB)');
+  if (streamGB > 0) {
+    html += costRow('Streaming inserts (' + streamGB + ' GB)', fmtDollar(streamCost) + ' ($0.050/GB)');
+  }
+  html += costRow('Monthly ingested (' + ingestGB + ' GB)', 'Free (batch load)');
+  html += '</div>';
+  html += '<div class="cost-total"><span class="ct-label">Monthly storage cost</span><span class="ct-value">' + fmtDollar(total) + '</span></div>';
+  html += '</div>';
+
+  if (streamGB > 0) {
+    html += '<div class="tip-box"><strong>Tip:</strong> You\'re using streaming inserts (' + fmtDollar(streamCost) + '/month). If you don\'t need real-time availability, switch to batch loads (bq load from GCS) which are free. You save ' + fmtDollar(streamCost) + '/month.</div>';
+  }
+
+  document.getElementById('storage-result').innerHTML = html;
+  document.getElementById('storage-result').style.display = 'block';
+}
+
+function resetStorage() {
+  document.getElementById('st-active').value   = 100;
+  document.getElementById('st-longterm').value = 500;
+  document.getElementById('st-ingest').value   = 20;
+  document.getElementById('st-stream').value   = 0;
+  document.getElementById('storage-result').style.display = 'none';
+}
+
+/* ── GA4 CALCULATOR ── */
+/* GA4 BigQuery export: ~200 bytes per event (compressed) */
+var GA4_BYTES_PER_EVENT = 200;
+
+function calcGA4() {
+  var sessions      = parseFloat(document.getElementById('ga-sessions').value) || 10000;
+  var eventsPerSes  = parseFloat(document.getElementById('ga-events-per-session').value) || 8;
+  var queriesPerMo  = parseFloat(document.getElementById('ga-queries').value) || 50;
+  var dateRangeDays = parseFloat(document.getElementById('ga-daterange').value) || 30;
+  var months        = parseFloat(document.getElementById('ga-months').value) || 12;
+  var usePartition  = document.getElementById('ga-partition').value === 'yes';
+
+  var eventsPerDay   = sessions * eventsPerSes;
+  var mbPerDay       = (eventsPerDay * GA4_BYTES_PER_EVENT) / (1024 * 1024);
+  var gbPerMonth     = mbPerDay * 30 / 1024;
+  var totalStorageGB = gbPerMonth * months;
+
+  /* Storage cost */
+  var storageCost = Math.max(0, totalStorageGB - BQ_FREE_STORAGE_GB) * BQ_ACTIVE_PER_GB;
+
+  /* Query cost: scan dateRange days worth of data */
+  var scanDays    = Math.min(dateRangeDays, months * 30);
+  var scanGB      = mbPerDay * scanDays / 1024;
+  if (!usePartition) { scanGB = totalStorageGB; } /* no filter = full scan */
+  var scanTB      = scanGB / 1024;
+  var tbPerMonth  = scanTB * queriesPerMo;
+  var billableTB  = Math.max(0, tbPerMonth - BQ_FREE_QUERY_TB);
+  var queryCost   = billableTB * BQ_QUERY_PER_TB;
+  var total       = storageCost + queryCost;
+
+  var html = '<div class="result-section">';
+  html += '<div class="rs-header">GA4 BigQuery Cost Breakdown</div><div class="rs-body">';
+  html += costRow('Daily events', Math.round(eventsPerDay).toLocaleString('en'));
+  html += costRow('Data per day', fmtNum(mbPerDay, 1) + ' MB');
+  html += costRow('Data per month', fmtNum(gbPerMonth, 2) + ' GB');
+  html += costRow('Total storage (' + months + ' months)', fmtNum(totalStorageGB, 2) + ' GB → ' + fmtDollar(storageCost) + '/month');
+  html += costRow('Scan per query (' + dateRangeDays + ' days)', fmtNum(scanGB, 3) + ' GB' + (usePartition ? ' (partition filtered)' : ' (full scan — no filter!)'));
+  html += costRow('Total TB scanned/month', fmtNum(tbPerMonth, 4) + ' TB (' + queriesPerMo + ' queries)');
+  html += costRow('Query cost', fmtDollar(queryCost));
+  html += '</div>';
+  html += '<div class="cost-total"><span class="ct-label">Monthly total (storage + queries)</span><span class="ct-value">' + fmtDollar(total) + '</span></div>';
+  html += '</div>';
+
+  if (!usePartition) {
+    html += '<div class="tip-box"><strong>⚠ Using no partition filter.</strong> Without <code>WHERE _TABLE_SUFFIX BETWEEN \'20260101\' AND \'20260131\'</code>, every query scans your entire ' + fmtNum(months, 0) + '-month history (' + fmtNum(totalStorageGB, 1) + ' GB). This costs ' + fmtDollar(queryCost) + '/month. With partition filters: ' + fmtDollar(Math.max(0, (scanTB * queriesPerMo) - 1) * 6.25 * 0.1) + '/month (est.). <strong>Always filter by _TABLE_SUFFIX.</strong></div>';
+  } else {
+    html += '<div class="tip-box"><strong>Good:</strong> Using partition filter. Query cost is minimal. Main cost driver at this traffic level is storage retention (' + months + ' months × ' + fmtNum(gbPerMonth, 2) + ' GB/month = ' + fmtNum(totalStorageGB, 1) + ' GB).</div>';
+  }
+
+  document.getElementById('ga4-result').innerHTML = html;
+  document.getElementById('ga4-result').style.display = 'block';
+}
+
+/* ── SLOTS CALCULATOR ── */
+function calcSlots() {
+  var currentSpend = parseFloat(document.getElementById('sl-current').value) || 0;
+  var tbPerMonth   = parseFloat(document.getElementById('sl-tb').value) || 0;
+  var edition      = document.getElementById('sl-edition').value;
+  var slots        = parseFloat(document.getElementById('sl-slots').value) || 100;
+  /* Round up to nearest 100 */
+  slots = Math.ceil(slots / 100) * 100;
+
+  var pricePerSlot = edition === 'enterprise' ? ENTERPRISE_PER_SLOT : ENTERPRISE_PLUS_PER_SLOT;
+  var slotCost     = slots * pricePerSlot;
+  var ondemandCost = Math.max(0, tbPerMonth - BQ_FREE_QUERY_TB) * BQ_QUERY_PER_TB;
+  var savings      = ondemandCost - slotCost;
+  var breakEvenTB  = (slotCost / BQ_QUERY_PER_TB) + BQ_FREE_QUERY_TB;
+
+  var html = '<div class="result-section">';
+  html += '<div class="rs-header">Flat-Rate vs On-Demand Comparison</div><div class="rs-body">';
+  html += costRow('Current on-demand cost', fmtDollar(ondemandCost) + '/month');
+  html += costRow((edition === 'enterprise' ? 'Enterprise' : 'Enterprise Plus') + ' (' + slots + ' slots)', fmtDollar(slotCost) + '/month');
+  html += costRow('Monthly savings with slots', savings > 0 ? fmtDollar(savings) : 'On-demand is cheaper by ' + fmtDollar(-savings));
+  html += costRow('Break-even point (TB/month)', fmtNum(breakEvenTB, 1) + ' TB');
+  html += '</div>';
+  html += '<div class="cost-total"><span class="ct-label">Recommended plan</span><span class="ct-value" style="font-size:18px;">' + (savings > 0 ? 'Flat-Rate' : 'On-Demand') + '</span></div>';
+  html += '</div>';
+
+  if (savings > 0) {
+    html += '<div class="tip-box"><strong>Slots recommended.</strong> At ' + fmtNum(tbPerMonth, 0) + ' TB/month, flat-rate saves ' + fmtDollar(savings) + '/month (' + fmtDollar(savings*12) + '/year). Break-even is at ' + fmtNum(breakEvenTB, 1) + ' TB/month.</div>';
+  } else {
+    html += '<div class="tip-box"><strong>On-demand is cheaper</strong> at your current usage (' + fmtNum(tbPerMonth, 0) + ' TB/month). Flat-rate becomes worthwhile above ' + fmtNum(breakEvenTB, 1) + ' TB/month.</div>';
+  }
+
+  document.getElementById('slots-result').innerHTML = html;
+  document.getElementById('slots-result').style.display = 'block';
+}
+
+/* ── HELPERS ── */
+function costRow(label, value, cls) {
+  var clsStr = cls ? ' class="cost-value ' + cls + '"' : ' class="cost-value"';
+  return '<div class="cost-row"><span class="cost-label">' + escH(String(label)) + '</span><span' + clsStr + '>' + value + '</span></div>';
+}
+
+function tf(el) {
+  var item = el.parentNode;
+  var isOpen = item.className.indexOf('open') !== -1;
+  var all = document.querySelectorAll('.faq-item');
+  for (var i = 0; i < all.length; i++) { all[i].className = 'faq-item'; }
+  if (!isOpen) { item.className = 'faq-item open'; }
+}
+
+/* INIT — auto-calculate on load */
+calcQuery();
+calcStorage();
+calcGA4();
+calcSlots();
+
+</script>
 </body>
 </html>
